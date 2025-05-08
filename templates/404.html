@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}Page Not Found{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card bg-dark border-secondary">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">Page Not Found (404)</h4>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-search display-1 text-info"></i>
+                    </div>
+                    <h5 class="text-center mb-3">We couldn't find the page you were looking for</h5>
+                    <p class="text-center">The page you requested might have been removed, renamed, or is temporarily unavailable.</p>
+                    <div class="text-center mt-4">
+                        <a href="{{ url_for('index') }}" class="btn btn-primary">Return to Home</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

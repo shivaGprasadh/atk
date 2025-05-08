@@ -1,0 +1,232 @@
+/* 
+ * Attack Surface Management - Custom CSS
+ * Minimal custom styles to complement the Bootstrap dark theme
+ */
+
+/* General Styles */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow-x: hidden;
+}
+
+.text-description {
+    color: #adb5bd;
+}
+
+/* Card Styles */
+.card {
+    transition: all 0.3s ease;
+}
+
+.card.border-0:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Dashboard widgets */
+.dashboard-widget {
+    border-radius: 6px;
+    height: 100%;
+    transition: all 0.2s ease-in-out;
+}
+
+.dashboard-widget:hover {
+    box-shadow: 0 0 15px rgba(13, 202, 240, 0.2);
+}
+
+.dashboard-widget .widget-icon {
+    font-size: 2rem;
+    opacity: 0.8;
+}
+
+.dashboard-widget .widget-value {
+    font-size: 2.2rem;
+    font-weight: 600;
+}
+
+.dashboard-widget .widget-label {
+    font-size: 0.9rem;
+    opacity: 0.7;
+}
+
+/* Scan Results */
+.finding-item {
+    border-left: 4px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.finding-item[data-severity="critical"] {
+    border-left-color: #dc3545;
+}
+
+.finding-item[data-severity="high"] {
+    border-left-color: #ffc107;
+}
+
+.finding-item[data-severity="medium"] {
+    border-left-color: #0d6efd;
+}
+
+.finding-item[data-severity="low"] {
+    border-left-color: #0dcaf0;
+}
+
+.finding-item[data-severity="info"] {
+    border-left-color: #6c757d;
+}
+
+.finding-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Progress animation for scan */
+@keyframes progress-bar-stripes {
+    from { background-position: 1rem 0; }
+    to { background-position: 0 0; }
+}
+
+.progress-bar-animated {
+    animation: progress-bar-stripes 1s linear infinite;
+}
+
+/* Table styles */
+.table-dark {
+    --bs-table-hover-bg: rgba(255, 255, 255, 0.05);
+}
+
+.table-dark thead th {
+    border-bottom-width: 1px;
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #212529;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #495057;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #6c757d;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .dashboard-widget .widget-value {
+        font-size: 1.8rem;
+    }
+    
+    .dashboard-widget .widget-icon {
+        font-size: 1.5rem;
+    }
+}
+
+/* Form controls */
+.form-control:focus, .form-select:focus {
+    border-color: #0dcaf0;
+    box-shadow: 0 0 0 0.25rem rgba(13, 202, 240, 0.25);
+}
+
+/* Toggle button styles */
+.toggle-button {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.toggle-button input[type="checkbox"] {
+    height: 0;
+    width: 0;
+    visibility: hidden;
+    position: absolute;
+}
+
+.toggle-button label {
+    cursor: pointer;
+    width: 50px;
+    height: 25px;
+    background: #6c757d;
+    display: block;
+    border-radius: 25px;
+    position: relative;
+    margin-bottom: 0;
+}
+
+.toggle-button label:after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 19px;
+    height: 19px;
+    background: #fff;
+    border-radius: 19px;
+    transition: 0.3s;
+}
+
+.toggle-button input:checked + label {
+    background: #0dcaf0;
+}
+
+.toggle-button input:checked + label:after {
+    left: calc(100% - 3px);
+    transform: translateX(-100%);
+}
+
+/* Badge styles */
+.badge.bg-danger, .badge.bg-warning, .badge.bg-primary, 
+.badge.bg-info, .badge.bg-secondary, .badge.bg-success {
+    font-weight: 500;
+    padding: 0.35em 0.65em;
+}
+
+/* Export button styles */
+.export-format-btn {
+    transition: all 0.2s ease;
+}
+
+.export-format-btn:hover {
+    transform: translateY(-2px);
+}
+
+/* Pre code blocks */
+pre {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* Compact view for dashboard (toggled by user preference) */
+.compact-view .card-body {
+    padding: 0.75rem;
+}
+
+.compact-view .dashboard-widget .widget-value {
+    font-size: 1.8rem;
+}
+
+.compact-view .dashboard-widget .widget-icon {
+    font-size: 1.5rem;
+}
+
+/* Severity indicator dots */
+.severity-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+.severity-dot.critical { background-color: #dc3545; }
+.severity-dot.high { background-color: #ffc107; }
+.severity-dot.medium { background-color: #0d6efd; }
+.severity-dot.low { background-color: #0dcaf0; }
+.severity-dot.info { background-color: #6c757d; }

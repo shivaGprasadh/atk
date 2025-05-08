@@ -1,0 +1,26 @@
+version: '3'
+
+services:
+  app:
+    build: .
+    ports:
+      - "5002:5002"
+    environment:
+      - DATABASE_URL=postgresql://asmt_user:asmt_password@db:5432/asmt_db
+      - SESSION_SECRET=your_secure_random_string
+    depends_on:
+      - db
+    restart: always
+
+  db:
+    image: postgres:14
+    environment:
+      - POSTGRES_USER=asmt_user
+      - POSTGRES_PASSWORD=asmt_password
+      - POSTGRES_DB=asmt_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
+volumes:
+  postgres_data:

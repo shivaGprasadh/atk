@@ -1,0 +1,1389 @@
+{% extends 'base.html' %}
+
+{% block title %}Attack Surface Management | Scan Results{% endblock %}
+
+{% block head %}
+{% if not is_complete %}
+<meta http-equiv="refresh" content="5">
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-11">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-search text-info me-2"></i> Scan Results
+                    </h1>
+                    <div>
+                        {% if is_complete %}
+                        <div class="dropdown d-inline-block me-2">
+                            <button class="btn btn-outline-info dropdown-toggle" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-file-export me-1"></i> Export Scan Report
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="exportDropdown">
+                                <li><a class="dropdown-item" href="{{ url_for('export_scan_report', scan_id=scan.id, format='pdf') }}"><i class="fas fa-file-pdf me-2"></i>PDF</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('export_scan_report', scan_id=scan.id, format='json') }}"><i class="fas fa-file-code me-2"></i>JSON</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('export_scan_report', scan_id=scan.id, format='csv') }}"><i class="fas fa-file-csv me-2"></i>CSV</a></li>
+                            </ul>
+                        </div>
+                        {% endif %}
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-plus me-1"></i> New Scan
+                        </a>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="alert bg-dark border-secondary">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-globe fa-2x text-info me-3"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h5 class="mb-1">Target: {{ scan.target_url.replace('http://', '').replace('https://', '') }}</h5>
+                                    <p class="mb-0 text-muted">Scan initiated: {{ scan.scan_date.strftime('%Y-%m-%d %H:%M:%S UTC') }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {% if not is_complete %}
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="card bg-dark border-secondary">
+                            <div class="card-body">
+                                <h5 class="card-title">Scan in progress</h5>
+                                <div class="progress mb-3">
+                                    <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                                </div>
+                                <p id="current-step" class="mb-0 text-muted">Starting scan...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <!-- WHOIS Information Section -->
+                {% if scan.whois_scan %}
+                <div class="row mb-4">
+                    <div class="col-md-11 mx-auto">
+                        <div class="card bg-dark border-secondary">
+                            <div class="card-body p-4">
+                                <h2 class="h4 mb-4">
+                                    <i class="fas fa-id-card text-info me-2"></i> WHOIS Information
+                                </h2>
+
+                                <!-- Domain Overview -->
+                                <div class="alert bg-dark border-secondary mb-4">
+                                    <div class="d-flex">
+                                        <div class="flex-shrink-0">
+                                            <i class="fas fa-globe fa-2x text-info me-3"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h5 class="mb-1">{{ scan.whois_scan.domain_name }}</h5>
+                                            <p class="mb-0 text-muted">
+                                                Registered through {{ scan.whois_scan.registrar|default('Unknown Registrar', true) }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Registration Details -->
+                                <div class="card bg-dark border-secondary mb-4">
+                                    <div class="card-header bg-dark">
+                                        <h6 class="mb-0">Domain Registration Details</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="table-responsive">
+                                            <table class="table table-dark table-bordered mb-0">
+                                                <tbody>
+                                                    <tr>
+                                                        <th style="width: 30%">Domain Name</th>
+                                                        <td>{{ scan.whois_scan.domain_name }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Registrar</th>
+                                                        <td>{{ scan.whois_scan.registrar }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Creation Date</th>
+                                                        <td>{{ scan.whois_scan.creation_date }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Expiration Date</th>
+                                                        <td>
+                                                            {% if scan.whois_scan.expiration_date %}
+                                                                {% set days_until_expiry = (scan.whois_scan.expiration_date - now).days %}
+                                                                {{ scan.whois_scan.expiration_date }}
+                                                                <br>
+                                                                {% if days_until_expiry < 0 %}
+                                                                    <span class="badge bg-danger">Expired {{ abs(days_until_expiry) }} days ago</span>
+                                                                {% elif days_until_expiry < 30 %}
+                                                                    <span class="badge bg-warning">Expires in {{ days_until_expiry }} days</span>
+                                                                {% else %}
+                                                                    <span class="badge bg-success">Valid for {{ days_until_expiry }} days</span>
+                                                                {% endif %}
+                                                            {% else %}
+                                                                Not Available
+                                                            {% endif %}
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Raw WHOIS Data -->
+                                {% if scan.whois_scan.whois_data %}
+                                <div class="card bg-dark border-secondary">
+                                    <div class="card-header bg-dark">
+                                        <h6 class="mb-0">Raw WHOIS Data</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <pre class="bg-dark border border-secondary p-3 rounded"><code>{{ scan.whois_scan.whois_data }}</code></pre>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Vulnerability Summary -->
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="card bg-dark border-secondary">
+                            <div class="card-header bg-dark">
+                                <h5 class="card-title mb-0">Vulnerability Summary</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row text-center">
+                                    <div class="col">
+                                        <div class="p-3">
+                                            <h3 class="text-danger">{{ scan.critical_count }}</h3>
+                                            <span class="text-muted">Critical</span>
+                                        </div>
+                                    </div>
+                                    <div class="col">
+                                        <div class="p-3">
+                                            <h3 class="text-warning">{{ scan.high_count }}</h3>
+                                            <span class="text-muted">High</span>
+                                        </div>
+                                    </div>
+                                    <div class="col">
+                                        <div class="p-3">
+                                            <h3 class="text-primary">{{ scan.medium_count }}</h3>
+                                            <span class="text-muted">Medium</span>
+                                        </div>
+                                    </div>
+                                    <div class="col">
+                                        <div class="p-3">
+                                            <h3 class="text-info">{{ scan.low_count }}</h3>
+                                            <span class="text-muted">Low</span>
+                                        </div>
+                                    </div>
+                                    <div class="col">
+                                        <div class="p-3">
+                                            <h3 class="text-secondary">{{ scan.info_count }}</h3>
+                                            <span class="text-muted">Info</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <canvas id="vulnerabilitySummaryChart" height="100"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabs for Different Scan Components -->
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="card bg-dark border-secondary">
+                            <div class="card-header bg-dark">
+                                <ul class="nav nav-tabs card-header-tabs" id="scanTabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" id="findings-tab" data-bs-toggle="tab" data-bs-target="#findings-content" type="button" role="tab" aria-controls="findings-content" aria-selected="true">
+                                            <i class="fas fa-list-ul me-1"></i> Findings
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="dns-tab" data-bs-toggle="tab" data-bs-target="#dns-content" type="button" role="tab" aria-controls="dns-content" aria-selected="false">
+                                            <i class="fas fa-server me-1"></i> DNS Info
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="ssl-tab" data-bs-toggle="tab" data-bs-target="#ssl-content" type="button" role="tab" aria-controls="ssl-content" aria-selected="false">
+                                            <i class="fas fa-lock me-1"></i> SSL Info
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="http-tab" data-bs-toggle="tab" data-bs-target="#http-content" type="button" role="tab" aria-controls="http-content" aria-selected="false">
+                                            <i class="fas fa-file-code me-1"></i> HTTP Headers
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="ports-tab" data-bs-toggle="tab" data-bs-target="#ports-content" type="button" role="tab" aria-controls="ports-content" aria-selected="false">
+                                            <i class="fas fa-network-wired me-1"></i> Ports & Services
+                                        </button>
+                                    </li>
+
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="csp-tab" data-bs-toggle="tab" data-bs-target="#csp-content" type="button" role="tab" aria-controls="csp-content" aria-selected="false">
+                                            <i class="fas fa-shield-alt me-1"></i> CSP
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="https-tab" data-bs-toggle="tab" data-bs-target="#https-content" type="button" role="tab" aria-controls="https-content" aria-selected="false">
+                                            <i class="fas fa-lock me-1"></i> HTTPS
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="cors-tab" data-bs-toggle="tab" data-bs-target="#cors-content" type="button" role="tab" aria-controls="cors-content" aria-selected="false">
+                                            <i class="fas fa-exchange-alt me-1"></i> CORS
+                                        </button>
+                                    </li>
+                                    </ul>
+                                <div class="tab-content mt-3">
+                                    <!-- Findings Tab -->
+                                    <div class="tab-pane fade show active" id="findings-content" role="tabpanel" aria-labelledby="findings-tab">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h5 class="card-title mb-0">Detailed Findings</h5>
+                                            <div class="btn-group">
+                                                <button type="button" class="btn btn-sm btn-outline-secondary filter-btn active" data-filter="all">All</button>
+                                                <button type="button" class="btn btn-sm btn-outline-danger filter-btn" data-filter="critical">Critical</button>
+                                                <button type="button" class="btn btn-sm btn-outline-warning filter-btn" data-filter="high">High</button>
+                                                <button type="button" class="btn btn-sm btn-outline-primary filter-btn" data-filter="medium">Medium</button>
+                                                <button type="button" class="btn btn-sm btn-outline-info filter-btn" data-filter="low">Low</button>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary filter-btn" data-filter="info">Info</button>
+                                            </div>
+                                        </div>
+                                        <div class="list-group list-group-flush">
+                                            {% if findings %}
+                                                {% for finding in findings %}
+                                                    <div class="list-group-item finding-item bg-dark border-secondary mt-2" data-severity="{{ finding.severity|lower }}">
+                                                        <div class="d-flex w-100 justify-content-between align-items-center mb-2">
+                                                            <h5 class="mb-1">
+                                                                {% if finding.severity|lower == 'critical' %}
+                                                                    <span class="badge bg-danger me-2">Critical</span>
+                                                                {% elif finding.severity|lower == 'high' %}
+                                                                    <span class="badge bg-warning text-dark me-2">High</span>
+                                                                {% elif finding.severity|lower == 'medium' %}
+                                                                    <span class="badge bg-primary me-2">Medium</span>
+                                                                {% elif finding.severity|lower == 'low' %}
+                                                                    <span class="badge bg-info text-dark me-2">Low</span>
+                                                                {% else %}
+                                                                    <span class="badge bg-secondary me-2">Info</span>
+                                                                {% endif %}
+                                                                {{ finding.title }}
+                                                            </h5>
+                                                            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#finding{{ loop.index }}">
+                                                                <i class="fas fa-chevron-down"></i>
+                                                            </button>
+                                                        </div>
+                                                        <p class="mb-1 text-muted">{{ finding.description }}</p>
+                                                        <div class="collapse mt-3" id="finding{{ loop.index }}">
+                                                            <div class="card card-body bg-dark border-secondary">
+                                                                {% if finding.recommendation %}
+                                                                    <h6 class="text-info mb-2">Recommendation:</h6>
+                                                                    <p class="mb-3">{{ finding.recommendation }}</p>
+                                                                {% endif %}
+
+                                                                {% if finding.details %}
+                                                                    <h6 class="text-info mb-2">Details:</h6>
+                                                                    <p class="mb-3">{{ finding.details }}</p>
+                                                                {% endif %}
+
+                                                                <!-- Display additional finding information as details -->
+                                                                <h6 class="text-info mb-2">Finding Information:</h6>
+                                                                <div class="table-responsive">
+                                                                    <table class="table table-sm table-dark">
+                                                                        <tbody>
+                                                                            <tr>
+                                                                                <th style="width: 30%">Title</th>
+                                                                                <td>{{ finding.title }}</td>
+                                                                            </tr>
+                                                                            <tr>
+                                                                                <th>Severity</th>
+                                                                                <td>
+                                                                                    {% if finding.severity|lower == 'critical' %}
+                                                                                        <span class="badge bg-danger">Critical</span>
+                                                                                    {% elif finding.severity|lower == 'high' %}
+                                                                                        <span class="badge bg-warning text-dark">High</span>
+                                                                                    {% elif finding.severity|lower == 'medium' %}
+                                                                                        <span class="badge bg-primary">Medium</span>
+                                                                                    {% elif finding.severity|lower == 'low' %}
+                                                                                        <span class="badge bg-info text-dark">Low</span>
+                                                                                    {% else %}
+                                                                                        <span class="badge bg-secondary">Info</span>
+                                                                                    {% endif %}
+                                                                                </td>
+                                                                            </tr>
+                                                                            <tr>
+                                                                                <th>Description</th>
+                                                                                <td>{{ finding.description }}</td>
+                                                                            </tr>
+                                                                            {% for key, value in finding.items() %}
+                                                                                {% if key not in ['title', 'severity', 'description', 'recommendation', 'details'] and value is not none %}
+                                                                                    <tr>
+                                                                                        <th>{{ key|capitalize }}</th>
+                                                                                        <td>{{ value }}</td>
+                                                                                    </tr>
+                                                                                {% endif %}
+                                                                            {% endfor %}
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                {% endfor %}
+                                            {% else %}
+                                                <div class="list-group-item bg-dark">
+                                                    <p class="mb-0 text-center text-muted">No findings detected</p>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <!-- DNS Information Tab -->
+                                    <div class="tab-pane fade" id="dns-content" role="tabpanel" aria-labelledby="dns-tab">
+                                        <h5 class="card-title mb-3">DNS Information</h5>
+                                        {% if scan.dns_scan %}
+                                            <div class="table-responsive">
+                                                <table class="table table-dark table-bordered">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>DNSSEC Enabled</th>
+                                                            <th>DNSSEC Status</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            <td>{{ scan.dns_scan.has_dnssec|default('No', true) }}</td>
+                                                            <td>{{ scan.dns_scan.dnssec_status|default('N/A', true) }}</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+
+                                            {% if scan.dns_scan.nameservers %}
+                                                <h6 class="text-info mt-4 mb-2">Nameservers</h6>
+                                                <div class="table-responsive">
+                                                    <table class="table table-dark table-bordered">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Nameserver</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {% for ns in scan.dns_scan.nameservers|fromjson %}
+                                                                <tr>
+                                                                    <td>{{ ns }}</td>
+                                                                </tr>
+                                                            {% endfor %}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            {% endif %}
+
+                                            {% if scan.dns_scan.dns_records %}
+                                                <h6 class="text-info mt-4 mb-2">DNS Records</h6>
+                                                <div class="table-responsive">
+                                                    <table class="table table-dark table-bordered">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Record Type</th>
+                                                                <th>Value</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {% set records = scan.dns_scan.dns_records|fromjson %}
+                                                            {% for record_type, values in records.items() %}
+                                                                {% if values|length > 0 %}
+                                                                    {% for value in values %}
+                                                                        <tr>
+                                                                            <td><strong>{{ record_type }}</strong></td>
+                                                                            <td>{{ value }}</td>
+                                                                        </tr>
+                                                                    {% endfor %}
+                                                                {% endif %}
+                                                            {% endfor %}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                                <div class="mt-3">
+                                                    <h6 class="text-info mb-2">Raw DNS Records (dig output)</h6>
+                                                    <pre class="bg-dark border border-secondary p-3 rounded"><code>{{ scan.dns_scan.dns_records|fromjson|tojson(indent=2) }}</code></pre>
+                                                </div>
+                                            {% endif %}
+                                        {% else %}
+                                            <div class="alert alert-info">
+                                                No DNS information available for this scan.
+                                            </div>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- SSL Information Tab -->
+                                    <div class="tab-pane fade" id="ssl-content" role="tabpanel" aria-labelledby="ssl-tab">
+                                        <h5 class="card-title mb-3">SSL Certificate Information</h5>
+                                        {% if scan.ssl_scan %}
+                                            {% if scan.ssl_scan.has_ssl %}
+                                                <div class="row">
+                                                    <div class="col-md-12">
+                                                        <!-- Certificate Information -->
+                                                        <div class="card bg-dark border-secondary mb-4">
+                                                            <div class="card-header bg-dark">
+                                                                <h6 class="mb-0">Certificate Details</h6>
+                                                            </div>
+                                                            <div class="card-body p-0">
+                                                                <div class="table-responsive">
+                                                                    <table class="table table-dark table-bordered mb-0">
+                                                                        <tbody>
+                                                                            <tr>
+                                                                                <th style="width: 30%">Certificate Subject</th>
+                                                                                <td>{{ scan.ssl_scan.cert_subject|default('N/A', true) }}</td>
+                                                                            </tr>
+                                                                            <tr>
+                                                                                <th>Certificate Issuer</th>
+                                                                                <td>{{ scan.ssl_scan.cert_issuer|default('N/A', true) }}</td>
+                                                                            </tr>
+                                                                            <tr>
+                                                                                <th>Valid From</th>
+                                                                                <td>{{ scan.ssl_scan.valid_from|default('N/A', true) }}</td>
+                                                                            </tr>
+                                                                            <tr>
+                                                                                <th>Valid Until</th>
+                                                                                <td>{{ scan.ssl_scan.valid_until|default('N/A', true) }}</td>
+                                                                            </tr>
+                                                                            <tr>
+                                                                                <th>Certificate Version</th>
+                                                                                <td>{{ scan.ssl_scan.certificate_version|default('N/A', true) }}</td>
+                                                                            </tr>
+                                                                            <tr>
+                                                                                <th>Signature Algorithm</th>
+                                                                                <td>{{ scan.ssl_scan.signature_algorithm|default('N/A', true) }}</td>
+                                                                            </tr>
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Certificate Status & Analysis -->
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <div class="card bg-dark border-secondary mb-4">
+                                                            <div class="card-header bg-dark">
+                                                                <h6 class="mb-0">Validity Status</h6>
+                                                            </div>
+                                                            <div class="card-body">
+                                                                {% if scan.ssl_scan.valid_until %}
+                                                                    {% set now = now|default(None) or scan.scan_date %}
+                                                                    {% set days_until_expiry = (scan.ssl_scan.valid_until - now).days %}
+
+                                                                    {% if days_until_expiry < 0 %}
+                                                                        <div class="alert alert-danger">
+                                                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                                                            <strong>Expired</strong> - Certificate expired {{ abs(days_until_expiry) }} days ago
+                                                                        </div>
+                                                                    {% elif days_until_expiry < 30 %}
+                                                                        <div class="alert alert-warning">
+                                                                            <i class="fas fa-exclamation-circle me-2"></i>
+                                                                            <strong>Expiring Soon</strong> - Certificate will expire in {{ days_until_expiry }} days
+                                                                        </div>
+                                                                    {% else %}
+                                                                        <div class="alert alert-success">
+                                                                            <i class="fas fa-check-circle me-2"></i>
+                                                                            <strong>Valid</strong> - Certificate expires in {{ days_until_expiry }} days
+                                                                        </div>
+                                                                    {% endif %}
+
+                                                                    <!-- Certificate Timeline -->
+                                                                    {% set total_validity = (scan.ssl_scan.valid_until - scan.ssl_scan.valid_from).days %}
+                                                                    {% set days_since_issue = (now - scan.ssl_scan.valid_from).days %}
+                                                                    {% set percent_used = (days_since_issue / total_validity * 100)|round %}
+
+                                                                    <div class="mt-3">
+                                                                        <small class="d-block text-muted mb-2">Certificate Lifecycle ({{ percent_used }}% elapsed)</small>
+                                                                        <div class="progress bg-dark">
+                                                                            <div class="progress-bar {% if percent_used > 90 %}bg-danger{% elif percent_used > 70 %}bg-warning{% else %}bg-success{% endif %}" 
+                                                                                role="progressbar" 
+                                                                                style="width: {{ percent_used }}%" 
+                                                                                aria-valuenow="{{ percent_used }}" 
+                                                                                aria-valuemin="0" 
+                                                                                aria-valuemax="100"></div>
+                                                                        </div>
+                                                                        <div class="d-flex justify-content-between mt-1">
+                                                                            <small class="text-muted">Issued: {{ scan.ssl_scan.valid_from.strftime('%Y-%m-%d') }}</small>
+                                                                            <small class="text-muted">Expires: {{ scan.ssl_scan.valid_until.strftime('%Y-%m-%d') }}</small>
+                                                                        </div>
+                                                                    </div>
+                                                                {% else %}
+                                                                    <div class="alert alert-info">
+                                                                        <i class="fas fa-info-circle me-2"></i>
+                                                                        Certificate validity information not available
+                                                                    </div>
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="col-md-6">
+                                                        <div class="card bg-dark border-secondary mb-4">
+                                                            <div class="card-header bg-dark">
+                                                                <h6 class="mb-0">Security Analysis</h6>
+                                                            </div>
+                                                            <div class="card-body">
+                                                                <!-- Signature Algorithm Analysis -->
+                                                                {% if scan.ssl_scan.signature_algorithm %}
+                                                                    {% set algo_lower = scan.ssl_scan.signature_algorithm|lower %}
+                                                                    {% if 'sha256' in algo_lower or 'sha384' in algo_lower or 'sha512' in algo_lower %}
+                                                                        <div class="d-flex align-items-center mb-3">
+                                                                            <div class="badge bg-success p-2 me-3"><i class="fas fa-shield-alt"></i></div>
+                                                                            <div>
+                                                                                <strong>Strong Signature Algorithm</strong>
+                                                                                <small class="d-block text-muted">{{ scan.ssl_scan.signature_algorithm }}</small>
+                                                                            </div>
+                                                                        </div>
+                                                                    {% elif 'sha1' in algo_lower or 'md5' in algo_lower %}
+                                                                        <div class="d-flex align-items-center mb-3">
+                                                                            <div class="badge bg-danger p-2 me-3"><i class="fas fa-exclamation-triangle"></i></div>
+                                                                            <div>
+                                                                                <strong>Weak Signature Algorithm</strong>
+                                                                                <small class="d-block text-muted">{{ scan.ssl_scan.signature_algorithm }}</small>
+                                                                            </div>
+                                                                        </div>
+                                                                    {% else %}
+                                                                        <div class="d-flex align-items-center mb-3">
+                                                                            <div class="badge bg-info p-2 me-3"><i class="fas fa-info-circle"></i></div>
+                                                                            <div>
+                                                                                <strong>Signature Algorithm</strong>
+                                                                                <small class="d-block text-muted">{{ scan.ssl_scan.signature_algorithm }}</small>
+                                                                            </div>
+                                                                        </div>
+                                                                    {% endif %}
+                                                                {% endif %}
+
+                                                                <!-- Certificate Version Analysis -->
+                                                                {% if scan.ssl_scan.certificate_version %}
+                                                                    <div class="d-flex align-items-center mb-3">
+                                                                        <div class="badge bg-info p-2 me-3"><i class="fas fa-file-certificate"></i></div>
+                                                                        <div>
+                                                                            <strong>Certificate Version</strong>
+                                                                            <small class="d-block text-muted">{{ scan.ssl_scan.certificate_version }}</small>
+                                                                        </div>
+                                                                    </div>
+                                                                {% endif %}
+
+                                                                <!-- Issuer Analysis -->
+                                                                {% if scan.ssl_scan.cert_issuer %}
+                                                                    <div class="d-flex align-items-center">
+                                                                        <div class="badge bg-info p-2 me-3"><i class="fas fa-certificate"></i></div>
+                                                                        <div>
+                                                                            <strong>Issued By</strong>
+                                                                            <small class="d-block text-muted">{{ scan.ssl_scan.cert_issuer }}</small>
+                                                                        </div>
+                                                                    </div>
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- SSL Issues -->
+                                                {% if scan.ssl_scan.issues %}
+                                                    <div class="row">
+                                                        <div class="col-md-12">
+                                                            <div class="card bg-dark border-secondary">
+                                                                <div class="card-header bg-dark">
+                                                                    <h6 class="mb-0">SSL Issues & Recommendations</h6>
+                                                                </div>
+                                                                <div class="card-body p-0">
+                                                                    <div class="list-group list-group-flush border-top-0">
+                                                                        {% for issue in scan.ssl_scan.issues|fromjson %}
+                                                                            <div class="list-group-item bg-dark border-secondary">
+                                                                                <div class="d-flex">
+                                                                                    {% if issue.severity|lower == 'critical' %}
+                                                                                        <div class="badge bg-danger me-3 p-2"><i class="fas fa-times-circle"></i></div>
+                                                                                    {% elif issue.severity|lower == 'high' %}
+                                                                                        <div class="badge bg-warning text-dark me-3 p-2"><i class="fas fa-exclamation-triangle"></i></div>
+                                                                                    {% elif issue.severity|lower == 'medium' %}
+                                                                                        <div class="badge bg-primary me-3 p-2"><i class="fas fa-exclamation-circle"></i></div>
+                                                                                    {% elif issue.severity|lower == 'low' %}
+                                                                                        <div class="badge bg-info text-dark me-3 p-2"><i class="fas fa-info-circle"></i></div>
+                                                                                    {% else %}
+                                                                                        <div class="badge bg-secondary me-3 p-2"><i class="fas fa-info"></i></div>
+                                                                                    {% endif %}
+                                                                                    <div>
+                                                                                        <h6 class="mb-1">{{ issue.title }}</h6>
+                                                                                        <p class="mb-1 text-muted">{{ issue.description }}</p>
+                                                                                        {% if issue.recommendation %}
+                                                                                            <small class="text-info">
+                                                                                                <i class="fas fa-lightbulb me-1"></i> 
+                                                                                                {{ issue.recommendation }}
+                                                                                            </small>
+                                                                                        {% endif %}
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        {% endfor %}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                        </div>
+                                                    </div>
+                                                {% endif %}
+                                            {%else %}
+                                                <div class="alert alert-warning">
+                                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                                    <strong>No SSL Certificate Found</strong> - This website does not use HTTPS or SSL/TLS.
+                                                </div>
+                                                <div class="card bg-dark border-danger mt-4">
+                                                    <div class="card-header bg-danger text-white">
+                                                        <h6 class="mb0">Security Risk: Missing SSL/TLS</h6>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <div class="row">
+                                                            <div class="col-md-2 d-flex justify-content-center align-items-start">
+                                                                <div class="display-4 text-danger mt-2">
+                                                                    <i class="fas fa-unlock"></i>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-10">
+                                                                <h5 class="text-danger mb-3">Website Vulnerable to Man-in-the-Middle Attacks</h5>
+                                                                <p>Without HTTPS encryption, all data transmitted between users and this website is sent in plain text. This includes:</p>
+                                                                <ul>
+                                                                    <li>Login credentials</li>
+                                                                    <li>Personal information</li>
+                                                                    <li>Form submissions</li>
+                                                                    <li>Session cookies</li>
+                                                                </ul>
+                                                                <p>This makes the website vulnerable to various attacks including packet sniffing, session hijacking, and credential theft.</p>
+                                                                <div class="alert alert-info">
+                                                                    <i class="fas fa-lightbulb me-2"></i>
+                                                                    <strong>Recommendation:</strong> Install an SSL/TLS certificate and configure HTTPS for all connections.
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            {% endif %}
+                                        {% else %}
+                                            <div class="alert alert-info">
+                                                <i class="fas fa-info-circle me-2"></i>
+                                                No SSL information available for this scan.
+                                            </div>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- HTTP Headers Tab -->
+                                    <div class="tab-pane fade" id="http-content" role="tabpanel" aria-labelledby="http-tab">
+                                        <h5 class="card-title mb-3">HTTP Headers Information</h5>
+                                        {% if scan.http_scan %}
+                                            <div class="row mb-4">
+                                                <!-- Security Headers Status -->
+                                                <div class="col-md-12 mb-4">
+                                                    <div class="card bg-dark border-secondary">
+                                                        <div class="card-header bg-dark">
+                                                            <h6 class="mb-0">Security Headers</h6>
+                                                        </div>
+                                                        <div class="card-body">
+                                                            {% if scan.http_scan.missing_headers %}
+                                                                <div class="alert alert-warning">
+                                                                    <i class="fas fa-exclamation-circle me-2"></i> Missing recommended security headers detected.
+                                                                </div>
+                                                                <h6 class="text-info mt-3 mb-2">Missing Security Headers</h6>
+                                                                <div class="table-responsive">
+                                                                    <table class="table table-dark table-bordered">
+                                                                        <thead>
+                                                                            <tr>
+                                                                                <th>Header</th>
+                                                                                <th>Purpose</th>
+                                                                                <th>Recommendation</th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody>
+                                                                            {% for header in scan.http_scan.missing_headers|fromjson %}
+                                                                                <tr>
+                                                                                    <td><code>{{ header.name }}</code></td>
+                                                                                    <td>{{ header.description }}</td>
+                                                                                    <td>{{ header.recommendation }}</td>
+                                                                                </tr>
+                                                                            {% endfor %}
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                            {% else %}
+                                                                <div class="alert alert-success">
+                                                                    <i class="fas fa-check-circle me-2"></i> All recommended security headers are implemented.
+                                                                </div>
+                                                            {% endif %}
+
+                                                            {% if scan.http_scan.insecure_headers %}
+                                                                <h6 class="text-info mt-4 mb-2">Potentially Insecure Headers</h6>
+                                                                <div class="table-responsive">
+                                                                    <table class="table table-dark table-bordered">
+                                                                        <thead>
+                                                                            <tr>
+                                                                                <th>Header</th>
+                                                                                <th>Value</th>
+                                                                                <th>Issue</th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody>
+                                                                            {% for header in scan.http_scan.insecure_headers|fromjson %}
+                                                                                <tr>
+                                                                                    <td><code>{{ header.name }}</code></td>
+                                                                                    <td><code>{{ header.value }}</code></td>
+                                                                                    <td>{{ header.issue }}</td>
+                                                                                </tr>
+                                                                            {% endfor %}
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- All HTTP Headers -->
+                                                <div class="col-md-12">
+                                                    <div class="card bg-dark border-secondary">
+                                                        <div class="card-header bg-dark">
+                                                            <h6 class="mb-0">All HTTP Headers</h6>
+                                                        </div>
+                                                        <div class="card-body">
+                                                            {% if scan.http_scan.headers %}
+                                                                <div class="table-responsive">
+                                                                    <table class="table table-dark table-bordered">
+                                                                        <thead>
+                                                                            <tr>
+                                                                                <th>Header</th>
+                                                                                <th>Value</th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody>
+                                                                            {% for header, value in scan.http_scan.headers|fromjson|dictsort %}
+                                                                                <tr>
+                                                                                    <td><code>{{ header }}</code></td>
+                                                                                    <td><code>{{ value }}</code></td>
+                                                                                </tr>
+                                                                            {% endfor %}
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                            {% else %}
+                                                                <div class="alert alert-info">
+                                                                    No HTTP headers information available.
+                                                                </div>
+                                                            {% endif %}
+
+                                                            {% if scan.http_scan.server_info %}
+                                                                <div class="alert alert-warning mt-3">
+                                                                    <i class="fas fa-exclamation-triangle me-2"></i> Server information exposure detected.
+                                                                    <div class="mt-2">
+                                                                        <strong>Server:</strong> <code>{{ scan.http_scan.server_info }}</code>
+                                                                    </div>
+                                                                    <div class="mt-2">
+                                                                        <strong>Recommendation:</strong> Consider hiding detailed server information to prevent attackers from targeting known vulnerabilities in specific server versions.
+                                                                    </div>
+                                                                </div>
+                                                            {% endif %}
+
+                                                            <!-- CSP Issues moved to separate tab -->
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {% else %}
+                                            <div class="alert alert-info">
+                                                <i class="fas fa-info-circle me-2"></i>
+                                                No HTTP headers information available for this scan.
+                                            </div>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Ports & Services Tab -->
+                                    <div class="tab-pane fade" id="ports-content" role="tabpanel" aria-labelledby="ports-tab">
+                                        <h5 class="card-title mb-3">Open Ports & Services</h5>
+                                        {% if scan.port_scan and scan.port_scan.open_ports %}
+                                            <div class="table-responsive">
+                                                <table class="table table-dark table-bordered">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Port</th>
+                                                            <th>Protocol</th>
+                                                            <th>Service</th>
+                                                            <th>Product</th>
+                                                            <th>Version</th>
+                                                            <th>State</th>
+                                                            <th>Risk</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% set high_risk_ports = ['21', '22', '23', '25', '445', '3306', '3389', '5432'] %}
+                                                        {% for port in scan.port_scan.open_ports|fromjson %}
+                                                            <tr>
+                                                                <td>{{ port.port }}</td>
+                                                                <td>{{ port.protocol }}</td>
+                                                                <td>{{ port.service }}</td>
+                                                                <td>{{ port.product }}</td>
+                                                                <td>{{ port.version }}</td>
+                                                                <td>{{ port.state }}</td>
+                                                                <td>
+                                                                    {% if port.port|string in high_risk_ports %}
+                                                                        <span class="badge bg-warning text-dark">High</span>
+                                                                    {% else %}
+                                                                        <span class="badge bg-primary">Medium</span>
+                                                                    {% endif %}
+                                                                </td>
+                                                            </tr>
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        {% else %}
+                                            <div class="alert alert-info">
+                                                No open ports detected for this target.
+                                            </div>
+                                        {% endif %}
+                                    </div>
+
+
+                                    <!-- HTTPS Tab -->
+                                    <div class="tab-pane fade" id="https-content" role="tabpanel" aria-labelledby="https-tab">
+                                        <h5 class="card-title mb-3">HTTPS Configuration</h5>
+                                        {% if scan.http_scan %}
+                                            <div class="card bg-dark border-secondary">
+                                                <div class="card-header bg-dark">
+                                                    <h6 class="mb-0">HTTP to HTTPS Redirection</h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    {% if scan.http_scan.redirect_to_https %}
+                                                        <div class="alert alert-success">
+                                                            <i class="fas fa-check-circle me-2"></i> HTTP to HTTPS redirection is properly configured.
+                                                        </div>
+                                                        <p>The website automatically redirects users from HTTP to the secure HTTPS version.</p>
+                                                    {% else %}
+                                                        <div class="alert alert-danger">
+                                                            <i class="fas fa-exclamation-triangle me-2"></i> HTTP to HTTPS redirection is not configured.
+                                                        </div>
+                                                        <p class="mb-0 text-warning"><strong>Recommendation:</strong> If HTTP protocol supported, Configure your web server to automatically redirect all HTTP traffic to HTTPS.</p>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        {% else %}
+                                            <div class="alert alert-info">
+                                                <i class="fas fa-info-circle me-2"></i>
+                                                No HTTPS information available for this scan.
+                                            </div>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- CORS Tab -->
+                                    <div class="tab-pane fade" id="cors-content" role="tabpanel" aria-labelledby="cors-tab">
+                                        <h5 class="card-title mb-3">CORS Configuration Analysis</h5>
+
+                                        <!-- Current CORS Headers -->
+                                        <div class="card bg-dark border-secondary mb-4">
+                                            <div class="card-header bg-dark">
+                                                <h6 class="mb-0">Current CORS Headers</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="table-responsive">
+                                                    <table class="table table-dark table-bordered">
+                                                        <tbody>
+                                                            {% set seen_headers = [] %}
+                                                            {% for header, value in scan.http_scan.headers|fromjson|dictsort %}
+                                                                {% if header.lower().startswith('access-control-') or header.lower().startswith('cross-origin-') %}
+                                                                    {% if header.lower() not in seen_headers %}
+                                                                        {% set _ = seen_headers.append(header.lower()) %}
+                                                                        <tr>
+                                                                            <th>{{ header }}</th>
+                                                                            <td style="word-break: break-all;"><code>{{ value }}</code></td>
+                                                                        </tr>
+                                                                    {% endif %}
+                                                                {% endif %}
+                                                            {% endfor %}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- CORS Findings -->
+                                        {% if scan.cors_findings %}
+                                            {% set findings = scan.cors_findings|fromjson %}
+                                            {% for finding in findings %}
+                                                <div class="card bg-dark border-secondary mb-4">
+                                                    <div class="card-header bg-dark">
+                                                        <h6 class="mb-0">CORS Finding: {{ finding.class }}</h6>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <div class="table-responsive">
+                                                            <table class="table table-dark table-bordered">
+                                                                <tbody>
+                                                                    <tr>
+                                                                        <th style="width: 30%">Class</th>
+                                                                        <td>{{ finding.class }}</td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <th>Description</th>
+                                                                        <td>{{ finding.description }}</td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <th>Severity</th>
+                                                                        <td><span class="badge bg-info">{{ finding.severity }}</span></td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <th>Exploitation</th>
+                                                                        <td>{{ finding.exploitation }}</td>
+                                                                    </tr>
+                                                                    {% if finding.acao_header %}
+                                                                    <tr>
+                                                                        <th>ACAO Header</th>
+                                                                        <td><code>{{ finding.acao_header }}</code></td>
+                                                                    </tr>
+                                                                    {% endif %}
+                                                                    {% if finding.acac_header %}
+                                                                    <tr>
+                                                                        <th>ACAC Header</th>
+                                                                        <td><code>{{ finding.acac_header }}</code></td>
+                                                                    </tr>
+                                                                    {% endif %}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        {% else %}
+                                            {% set findings = scan.cors_findings|fromjson %}
+                                            {% for finding in findings %}
+                                                <div class="card bg-dark border-secondary mb-4">
+                                                    <div class="card-header bg-dark">
+                                                        <h6 class="mb-0">CORS Misconfiguration: {{ finding.class }}</h6>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <div class="table-responsive">
+                                                            <table class="table table-dark table-bordered">
+                                                                <tbody>
+                                                                    <tr>
+                                                                        <th style="width: 30%">Class</th>
+                                                                        <td>Wildcard value</td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <th>Description</th>
+                                                                        <td>This host allows requests made from any origin. However, browsers will block all requests to this host by default.</td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <th>Severity</th>
+                                                                        <td><span class="badge bg-info">Low</span></td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <th>Exploitation</th>
+                                                                        <td>Not possible</td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <th>ACAO Header</th>
+                                                                        <td><code>*</code></td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <th>ACAC Header</th>
+                                                                        <td>None</td>
+                                                                    </tr>
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- CSP Tab -->
+                                    <div class="tab-pane fade" id="csp-content" role="tabpanel" aria-labelledby="csp-tab">
+                                        <h5 class="cardtitle mb-3">Content Security Policy Analysis</h5>
+
+                                        <!-- Show detected CSP header -->
+                                        {% if scan.http_scan and scan.http_scan.headers %}
+                                           {% set headers = scan.http_scan.headers|fromjson %}
+                                            {% set has_csp = false %}
+                                            {% set csp_header = "" %}
+
+                                            {% for key, value in headers.items() %}
+                                                {% if key.lower() == 'content-securitypolicy' %}
+                                                    {% set has_csp =true %}
+                                                    {% set csp_header = value %}
+                                               {%elif key.lower() == 'content-security-policy-report-only' %}
+                                                    {% set has_csp = true %}
+                                                    {% set csp_header = value %}
+                                                {% endif %}
+                                            {% endfor %}
+
+                                            <div class="card bg-dark border-secondary mb-4">
+                                            <div class="card-header bg-dark">
+                                                <h6 class="mb-0">Content Security Policy Headers</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="table-responsive">
+                                                    <table class="table table-dark table-bordered">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Header Name</th>
+                                                                <th>Value</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {% if scan.http_scan and scan.http_scan.headers %}
+                                                                {% set headers = scan.http_scan.headers|fromjson %}
+                                                                {% for key, value in headers.items() %}
+                                                                    {% if key.lower() == 'content-security-policy' or key.lower() == 'content-security-policy-report-only' %}
+                                                                    <tr>
+                                                                        <td><code>{{ key }}</code></td>
+                                                                        <td><code class="text-break">{{ value }}</code></td>
+                                                                    </tr>
+                                                                    {% endif %}
+                                                                {% endfor %}
+                                                            {% else %}
+                                                                <tr>
+                                                                    <td colspan="2" class="text-center">No CSP headers found</td>
+                                                                </tr>
+                                                            {% endif %}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+
+                                        {% if scan.http_scan and scan.http_scan.csp_issues %}
+                                            <div class="alert alert-warning">
+                                                <i class="fas fa-exclamation-triangle me-2"></i> Content Security Policy (CSP) misconfigurations detected
+                                            </div>
+                                            <div class="table-responsive">
+                                                <table class="table table-dark table-bordered">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Issue</th>
+                                                            <th>Description</th>
+                                                            <th>Severity</th>
+                                                            <th>Recommendation</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for issue in scan.http_scan.csp_issues|fromjson %}
+                                                            <tr>
+                                                                <td><strong>{{ issue.name }}</strong></td>
+                                                                <td>{{ issue.description }}</td>
+                                                                <td>
+                                                                    {% if issue.severity == 'high' %}
+                                                                        <span class="badge bg-danger">High</span>
+                                                                    {% elif issue.severity == 'medium' %}
+                                                                        <span class="badge bg-warning">Medium</span>
+                                                                    {% else %}
+                                                                        <span class="badge bg-info">Low</span>
+                                                                    {% endif %}
+                                                                </td>
+                                                                <td>{{ issue.recommendation }}</td>
+                                                            </tr>
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+
+                                        {% else %}
+                                            <div class="alert {% if scan.http_scan %}alert-danger{% else %}alert-info{% endif %}">
+                                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                                {% if scan.http_scan %}
+                                                    No Content Security Policy (CSP) headers were detected on this website.
+                                                    <div class="mt-2">
+                                                        <strong>Recommendation:</strong> Implement a Content Security Policy to help protect against cross-site scripting (XSS) and other code injection attacks.
+                                                    </div>
+                                                {% else %}
+                                                    No HTTP header information available for this scan.
+                                                {% endif %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+
+
+
+                                    <!-- WHOIS Information Tab -->
+                                    <div class="tab-pane fade" id="whois-content" role="tabpanel" aria-labelledby="whois-tab">
+                                        <h5 class="card-title mb-3">WHOIS Information</h5>
+                                        {% if scan.whois_scan %}
+                                            <!-- Domain Status Overview -->
+                                            {% block whois_domain_status %}
+                                            <div class="row mb-4">
+                                                <div class="col-md-12">
+                                                    <div class="alert bg-dark border-secondary">
+                                                        <div class="d-flex">
+                                                            <div class="flex-shrink-0">
+                                                                <i class="fas fa-globe fa-2x text-info me-3"></i>
+                                                            </div>
+                                                            <div class="flex-grow-1">
+                                                                <h5 class="mb-1">{{ scan.whois_scan.domain_name }}</h5>
+                                                                <p class="mb-0 text-muted">
+                                                                    Registered through {{ scan.whois_scan.registrar|default('Unknown Registrar', true) }}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% endblock %}
+
+                                            <!-- Domain Details Card -->
+                                            <div class="card bg-dark border-secondary mb-4">
+                                                <div class="card-header bg-dark">
+                                                    <h6 class="mb-0">
+                                                        <i class="fas fa-id-card me-2"></i>
+                                                        Domain Registration Details
+                                                    </h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div class="table-responsive">
+                                                        <table class="table table-dark table-bordered">
+                                                            <tbody>
+                                                                <tr>
+                                                                    <th style="width: 30%">Domain Name</th>
+                                                                    <td>{{ scan.whois_scan.domain_name }}</td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <th>Registrar</th>
+                                                                    <td>{{ scan.whois_scan.registrar }}</td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <th>Creation Date</th>
+                                                                    <td>{{ scan.whois_scan.creation_date }}</td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <th>Expiration Date</th>
+                                                                    <td>
+                                                                        {% if scan.whois_scan.expiration_date %}
+                                                                            {% set days_until_expiry = (scan.whois_scan.expiration_date - now).days %}
+                                                                            {{ scan.whois_scan.expiration_date }}
+                                                                            <br>
+                                                                            {% if days_until_expiry < 0 %}
+                                                                                <span class="badge bg-danger">Expired {{ abs(days_until_expiry) }} days ago</span>
+                                                                            {% elif days_until_expiry < 30 %}
+                                                                                <span class="badge bg-warning">Expires in {{ days_until_expiry }} days</span>
+                                                                            {% else %}
+                                                                                <span class="badge bg-success">Valid for {{ days_until_expiry }} days</span>
+                                                                            {% endif %}
+                                                                        {% else %}
+                                                                            Not Available
+                                                                        {% endif %}
+                                                                    </td>
+                                                                </tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Domain Age Analysis -->
+                                            {% if scan.whois_scan.creation_date %}
+                                                <div class="card bg-dark border-secondary mb-4">
+                                                    <div class="card-header bg-dark">
+                                                        <h6 class="mb-0">
+                                                            <i class="fas fa-calendar-alt me-2"></i>
+                                                            Domain Age Analysis
+                                                        </h6>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        {% set domain_age = (now - scan.whois_scan.creation_date).days %}
+                                                        <div class="d-flex align-items-center">
+                                                            <div class="display-4 me-3 text-info">
+                                                                <i class="fas fa-clock"></i>
+                                                            </div>
+                                                            <div>
+                                                                <h5>Domain Age: {{ (domain_age / 365)|round(1) }} years</h5>
+                                                                <p class="mb-0 text-muted">
+                                                                    {% if domain_age < 365 %}
+                                                                        This is a relatively new domain (less than 1 year old)
+                                                                    {% elif domain_age < 730 %}
+                                                                        This domain has been registered for over a year
+                                                                    {% else %}
+                                                                        This is a well-established domain
+                                                                    {% endif %}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            {% endif %}
+
+                                            <!-- Raw WHOIS Data -->
+                                            {% if scan.whois_scan.whois_data %}
+                                                <div class="card bg-dark border-secondary">
+                                                    <div class="card-header bg-dark">
+                                                        <h6 class="mb-0">
+                                                            <i class="fas fa-code me-2"></i>
+                                                            Raw WHOIS Data
+                                                        </h6>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <pre class="bg-dark border border-secondary p-3 rounded"><code>{{ scan.whois_scan.whois_data }}</code></pre>
+                                                    </div>
+                                                </div>
+                                            {% endif %}
+                                        {% else %}
+                                            <div class="alert alert-info">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="fs-1 me-3">
+                                                        <i class="fas fa-info-circle"></i>
+                                                    </div>
+                                                    <div>
+                                                        <h5 class="alert-heading">No WHOIS Information Available</h5>
+                                                        <p class="mb-0">WHOIS information could not be retrieved for this domain.</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if not is_complete %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    function updateProgress() {
+        fetch('{{ url_for("scan_progress_api", scan_id=scan.id) }}')
+            .then(response => response.json())
+            .then(data => {
+                const progressBar = document.getElementById('progress-bar');
+                const currentStep = document.getElementById('current-step');
+
+                if (data.status === 'complete') {
+                    progressBar.style.width = '100%';
+                    currentStep.innerText = 'Scan completed, refreshing page...';
+
+                    // Redirect to results page
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else if (data.status === 'error') {
+                    progressBar.classList.remove('bg-info');
+                    progressBar.classList.add('bg-danger');
+                    progressBar.style.width = '100%';
+                    currentStep.innerText = data.current_step;
+
+                    // Show error using SweetAlert2
+                    Swal.fire({
+                        title: 'Scan Error',
+                        text: data.current_step,
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    progressBar.style.width = data.progress + '%';
+                    currentStep.innerText = data.current_step;
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching scan progress:', error);
+            });
+    }
+
+    // Update progress immediately and then every 2 seconds
+    updateProgress();
+    setInterval(updateProgress, 2000);
+});
+</script>
+{% else %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize vulnerability summary chart
+    const ctx = document.getElementById('vulnerabilitySummaryChart').getContext('2d');
+    const vulnerabilitySummaryChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['Critical', 'High', 'Medium', 'Low', 'Info'],
+            datasets: [{
+                data: [
+                    {{ scan.critical_count }}, 
+                    {{ scan.high_count }}, 
+                    {{ scan.medium_count }}, 
+                    {{ scan.low_count }}, 
+                    {{ scan.info_count }}
+                ],
+                backgroundColor: [
+                    '#dc3545', // danger (critical)
+                    '#ffc107', // warning (high)
+                    '#0d6efd', // primary (medium)
+                    '#0dcaf0', // info (low)
+                    '#6c757d'  // secondary (info)
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: '#dee2e6'
+                    }
+                }
+            }
+        }
+    });
+
+    // Filter buttons for findings
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    const findingItems = document.querySelectorAll('.finding-item');
+
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Remove active class from all buttons
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+
+            // Add active class to clicked button
+            this.classList.add('active');
+
+            // Get filter value
+            const filterValue = this.getAttribute('data-filter');
+
+            // Filter findings
+            findingItems.forEach(item => {
+                if (filterValue === 'all' || item.getAttribute('data-severity') === filterValue) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

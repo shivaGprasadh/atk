@@ -1,0 +1,317 @@
+{% extends 'base.html' %}
+
+{% block title %}Attack Surface Management | Scan History{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-11">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-history text-info me-2"></i> Scan History
+                    </h1>
+                    <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-plus me-1"></i> New Scan
+                    </a>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="card bg-dark border-secondary">
+                            <div class="card-header bg-dark">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="card-title mb-0">All Scans</h5>
+                                    <div class="input-group" style="width: 300px;">
+                                        <input type="text" class="form-control" id="scan-search" placeholder="Search targets...">
+                                        <button class="btn btn-outline-secondary" type="button" id="search-btn">
+                                            <i class="fas fa-search"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-dark table-hover mb-0" id="scan-history-table">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Target</th>
+                                                <th>Date</th>
+                                                <th>Status</th>
+                                                <th>Critical</th>
+                                                <th>High</th>
+                                                <th>Medium</th>
+                                                <th>Low</th>
+                                                <th>Info</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% if scans %}
+                                                {% for scan in scans %}
+                                                    <tr>
+                                                        <td>{{ scan.id }}</td>
+                                                        <td>{{ scan.target_url }}</td>
+                                                        <td>{{ scan.scan_date.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                                        <td>
+                                                            {% if scan.is_complete %}
+                                                                <span class="badge bg-success">Complete</span>
+                                                            {% else %}
+                                                                <span class="badge bg-warning text-dark">In Progress</span>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td><span class="badge bg-danger">{{ scan.critical_count }}</span></td>
+                                                        <td><span class="badge bg-warning text-dark">{{ scan.high_count }}</span></td>
+                                                        <td><span class="badge bg-primary">{{ scan.medium_count }}</span></td>
+                                                        <td><span class="badge bg-info text-dark">{{ scan.low_count }}</span></td>
+                                                        <td><span class="badge bg-secondary">{{ scan.info_count }}</span></td>
+                                                        <td>
+                                                            <div class="btn-group" role="group">
+                                                                <a href="{{ url_for('scan_result', scan_id=scan.id) }}" class="btn btn-sm btn-outline-info" data-bs-toggle="tooltip" title="View Results">
+                                                                    <i class="fas fa-eye"></i>
+                                                                </a>
+                                                                {% if scan.is_complete %}
+                                                                <button type="button" class="btn btn-sm btn-outline-success export-btn" data-scan-id="{{ scan.id }}" data-bs-toggle="tooltip" title="Export Report">
+                                                                    <i class="fas fa-file-export"></i>
+                                                                </button>
+                                                                {% endif %}
+                                                                <button type="button" class="btn btn-sm btn-outline-danger delete-btn" data-scan-id="{{ scan.id }}" data-bs-toggle="tooltip" title="Delete Scan">
+                                                                    <i class="fas fa-trash-alt"></i>
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                {% endfor %}
+                                            {% else %}
+                                                <tr>
+                                                    <td colspan="10" class="text-center">No scan history available</td>
+                                                </tr>
+                                            {% endif %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scan Statistics -->
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100 bg-dark border-secondary">
+                            <div class="card-header bg-dark">
+                                <h5 class="card-title mb-0">Scan History Trends</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="scanHistoryChart" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100 bg-dark border-secondary">
+                            <div class="card-header bg-dark">
+                                <h5 class="card-title mb-0">Vulnerability Distribution</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="vulnerabilityDistributionChart" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Export Modal -->
+<div class="modal fade" id="exportModal" tabindex="-1" aria-labelledby="exportModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exportModalLabel">Export Scan Report</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Select the export format for your scan report:</p>
+                <div class="d-grid gap-3">
+                    <button type="button" class="btn btn-outline-primary export-format-btn" data-format="pdf">
+                        <i class="fas fa-file-pdf me-2"></i> PDF Report
+                    </button>
+                    <button type="button" class="btn btn-outline-success export-format-btn" data-format="csv">
+                        <i class="fas fa-file-csv me-2"></i> CSV Report
+                    </button>
+                    <button type="button" class="btn btn-outline-info export-format-btn" data-format="json">
+                        <i class="fas fa-file-code me-2"></i> JSON Report
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <span>Are you sure you want to delete this scan? This action cannot be undone.</span>
+                </div>
+                <p id="delete-scan-target" class="mb-0"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="delete-form" method="post">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash-alt me-1"></i> Delete Scan
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script>
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+
+    // Initialize charts
+    document.addEventListener('DOMContentLoaded', function() {
+        // Calculate scan history data
+        const scans = document.querySelectorAll('#scan-history-table tbody tr');
+        const scanData = {
+            dates: [],
+            counts: []
+        };
+        const vulnData = {
+            critical: 0,
+            high: 0,
+            medium: 0,
+            low: 0,
+            info: 0
+        };
+        
+        scans.forEach(scan => {
+            const date = scan.cells[2].textContent.split(' ')[0];
+            const critical = parseInt(scan.cells[4].textContent);
+            const high = parseInt(scan.cells[5].textContent);
+            const medium = parseInt(scan.cells[6].textContent);
+            const low = parseInt(scan.cells[7].textContent);
+            const info = parseInt(scan.cells[8].textContent);
+            
+            // Add to scan history data
+            if (!scanData.dates.includes(date)) {
+                scanData.dates.push(date);
+                scanData.counts.push(1);
+            } else {
+                const idx = scanData.dates.indexOf(date);
+                scanData.counts[idx]++;
+            }
+            
+            // Add to vulnerability distribution
+            vulnData.critical += critical;
+            vulnData.high += high;
+            vulnData.medium += medium;
+            vulnData.low += low;
+            vulnData.info += info;
+        });
+        
+        // Initialize charts with real data
+        initScanHistoryChart('scanHistoryChart', scanData);
+        initVulnerabilityDistributionChart('vulnerabilityDistributionChart', [
+            vulnData.critical,
+            vulnData.high,
+            vulnData.medium,
+            vulnData.low,
+            vulnData.info
+        ]);
+        
+        // Search functionality
+        const searchInput = document.getElementById('scan-search');
+        const searchBtn = document.getElementById('search-btn');
+        
+        const handleSearch = () => {
+            const searchTerm = searchInput.value.toLowerCase();
+            const rows = document.querySelectorAll('#scan-history-table tbody tr');
+            
+            rows.forEach(row => {
+                const target = row.cells[1].textContent.toLowerCase();
+                if (target.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        };
+        
+        searchBtn.addEventListener('click', handleSearch);
+        searchInput.addEventListener('keyup', function(e) {
+            if (e.key === 'Enter') {
+                handleSearch();
+            }
+        });
+        
+        // Export functionality
+        const exportButtons = document.querySelectorAll('.export-btn');
+        const exportModal = new bootstrap.Modal(document.getElementById('exportModal'));
+        let currentScanId = null;
+        
+        exportButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                currentScanId = this.getAttribute('data-scan-id');
+                exportModal.show();
+            });
+        });
+        
+        const formatButtons = document.querySelectorAll('.export-format-btn');
+        formatButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const format = this.getAttribute('data-format');
+                if (currentScanId) {
+                    // In a real app, this would make a request to download the report
+                    // For now, just show a success message
+                    exportModal.hide();
+                    window.location.href = `/scan/${currentScanId}/export/${format}`;
+                }
+            });
+        });
+        
+        // Delete functionality
+        const deleteButtons = document.querySelectorAll('.delete-btn');
+        const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        const deleteForm = document.getElementById('delete-form');
+        const deleteScanTarget = document.getElementById('delete-scan-target');
+        
+        deleteButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const scanId = this.getAttribute('data-scan-id');
+                const targetRow = this.closest('tr');
+                const targetUrl = targetRow.cells[1].textContent;
+                
+                // Set the scan target text and update the form action
+                deleteScanTarget.textContent = `Target: ${targetUrl}`;
+                deleteForm.action = `/scan/${scanId}/delete`;
+                
+                // Show the deletion confirmation modal
+                deleteModal.show();
+            });
+        });
+    });
+</script>
+{% endblock %}

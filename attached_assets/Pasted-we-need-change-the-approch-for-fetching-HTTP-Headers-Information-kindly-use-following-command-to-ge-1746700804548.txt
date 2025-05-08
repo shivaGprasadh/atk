@@ -1,0 +1,30 @@
+we need change the approch for fetching HTTP Headers Information. kindly use following command to get all headers. note: use exact same command , here i used www.experience.com as example
+
+sivaprasath@apples-MacBook-Pro Corsy % curl -s -D - -o /dev/null --http1.1 -L -k --retry 3 --retry-delay 2
+-A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+-H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,/;q=0.8"
+-H "Accept-Language: en-US,en;q=0.5"
+-H "Connection: keep-alive"
+https://www.experience.com
+
+i got following response
+HTTP/1.1 200 OK
+X-XSS-Protection: 1; mode=block
+strict-transport-security: max-age=31536000; includeSubdomains; preload
+Cache-Control: public, max-age=3600, immutable
+access-control-allow-origin: http://127.0.0.1 https://swis-static.devtest.experience.com https://swis-static.qa.experience.com https://swis-static.uat.experience.com https://swis-static.experience.com
+referrer-policy: strict-origin-when-cross-origin
+permissions-policy: geolocation=(self), camera=(self), microphone=(self), autoplay=(self)
+x-content-type-options: nosniff
+x-permitted-cross-domain-policies: none
+cross-origin-embedder-policy: unsafe-none
+cross-origin-opener-policy: unsafe-none
+cross-origin-resource-policy: same-origin
+content-security-policy: script-src 'self' openfpcdn.io api64.ipify.org ip-api.com *.pardot.com 18.232.28.107:9000 *.trovo-tag.com *.facebook.net *.cookiebot.com *.salesloft.com *.g2crowd.com *.licdn.com *.chilipiper.com *.terminus.services *.terminusplatform.com *.mouseflow.com https://aacdn.nagich.com/ https://access.nagich.com/ 'unsafe-eval' a.usbrowserspeed.com d-code.liadm.com *.processwebsitedata.com *.sitedataprocessing.com *.experience.com *.socialsurvey.com *.googleapis.com/ https://www.googletagmanager.com/ https://www.google-analytics.com/ https://www.google.com https://www.gstatic.com https://js-agent.newrelic.com *.nr-data.net https://cdnjs.cloudflare.com https://swis-static.devtest.experience.com https://swis-static.qa.experience.com https://swis-static.uat.experience.com https://swis-static.experience.com 'unsafe-inline' 'unsafe-hashes'; object-src 'self' *.experience.com *.socialsurvey.com; base-uri 'self' ; frame-ancestors 'self' 127.0.0.1 *.experience.com ;upgrade-insecure-requests;
+ETag: "zqdbctvks6gcn"
+Content-Type: text/html; charset=utf-8
+Content-Length: 301142
+Vary: Accept-Encoding
+Date: Thu, 08 May 2025 10:30:36 GMT
+Via: 1.1 google
+Alt-Svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
