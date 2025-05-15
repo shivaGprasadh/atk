@@ -30,13 +30,13 @@ def scan_ports(ip_address, scan_type='basic'):
         
         # Define scan parameters based on scan type
         if scan_type == 'full':
-            # Scan most common 1000 ports
-            arguments = '-sV -T4'
-            ports = None  # Default is top 1000 ports
+            # Enhanced TCP Connect scan with thorough service detection
+            arguments = '-sT -sV --version-all -T4 --open'
+            ports = '1-1024'  # Scan first 1024 ports
         else:
-            # Basic scan of common ports
-            arguments = '-sV -T4'
-            ports = '21-23,25,53,80,110,111,135,139,143,443,445,993,995,1723,3306,3389,5900,8080'
+            # Basic TCP Connect scan with thorough service detection
+            arguments = '-sT -sV --version-all -T4 --open'
+            ports = '80,443'  # Most common web ports
         
         # Run the scan
         nm.scan(hosts=ip_address, ports=ports, arguments=arguments)
@@ -55,13 +55,18 @@ def scan_ports(ip_address, scan_type='basic'):
                     # Only include if port state is 'open'
                     if port_info['state'] == 'open':
                         # Extract relevant port information
+                        service_name = port_info.get('name', '')
+                        if port_info.get('product'):
+                            service_name += f" ({port_info['product']}"
+                            if port_info.get('version'):
+                                service_name += f" {port_info['version']}"
+                            service_name += ")"
+                            
                         port_data = {
                             'port': port,
                             'protocol': proto,
                             'state': port_info['state'],
-                            'service': port_info.get('name', 'unknown'),
-                            'product': port_info.get('product', ''),
-                            'version': port_info.get('version', '')
+                            'service': service_name
                         }
                         open_ports.append(port_data)
         
