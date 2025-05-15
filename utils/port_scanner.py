@@ -52,17 +52,18 @@ def scan_ports(ip_address, scan_type='basic'):
                 for port in lport:
                     port_info = nm[ip_address][proto][port]
                     
-                    # Extract relevant port information
-                    port_data = {
-                        'port': port,
-                        'protocol': proto,
-                        'state': port_info['state'],
-                        'service': port_info.get('name', 'unknown'),
-                        'product': port_info.get('product', ''),
-                        'version': port_info.get('version', '')
-                    }
-                    
-                    open_ports.append(port_data)
+                    # Only include if port state is 'open'
+                    if port_info['state'] == 'open':
+                        # Extract relevant port information
+                        port_data = {
+                            'port': port,
+                            'protocol': proto,
+                            'state': port_info['state'],
+                            'service': port_info.get('name', 'unknown'),
+                            'product': port_info.get('product', ''),
+                            'version': port_info.get('version', '')
+                        }
+                        open_ports.append(port_data)
         
         if open_ports:
             result['open_ports'] = json.dumps(open_ports)

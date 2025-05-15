@@ -110,7 +110,7 @@ def _run_scan(scan_id):
 
             # 5. Port Scanning
             update_progress(scan_id, 'Scanning open ports')
-            port_data = scan_ports(ip_data.get('ip_address', ''))
+            port_data = scan_ports(ip_data.get('ip_address', ''), scan_type='full')
             port_scan = PortScan(
                 scan_id=scan_id,
                 open_ports=port_data.get('open_ports')
